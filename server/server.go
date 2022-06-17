@@ -1,0 +1,78 @@
+package main
+
+import (
+	"fmt"
+	"net"
+	"time"
+
+	"github.com/cothi/tcp-chat-remodel/utils"
+)
+
+type Message struct {
+	time time.Time
+	text string
+}
+
+type room struct {
+	room_name string
+	port      []string
+	clients   []*Client
+	message   []string
+}
+
+var (
+	room_1 room
+)
+
+func (r *room) broadcast(msg []byte) {
+	for _, c := range r.clients {
+		c.box <- msg
+	}
+}
+
+type Client struct {
+	name string
+	conn net.Conn
+	box  chan []byte
+}
+
+func InitClient(conn net.Conn) {
+	client := Client{
+		name: "anonymous",
+		conn: conn,
+		box:  make(chan []byte),
+	}
+	go client.Write()
+	go client.Read()
+	room_1.clients = append(room_1.clients, &client)
+}
+
+func (c *Client) Write() {
+	for {
+
+		s := <-c.box
+		c.conn.Write(s)
+		fmt.Println(c.name, c.conn.LocalAddr(), string(s))
+	}
+}
+
+func (c *Client) Read() {
+	recv := make([]byte, 4096)
+	for {
+		n, e := c.conn.Read(recv)
+		utils.Error_check(e)
+		room_1.broadcast(recv[:n])
+	}
+}
+
+func main() {
+
+	l, err := net.Listen("tcp", ":8000")
+	utils.Error_check(err)
+	defer l.Close()
+	for {
+		conn, err := l.Accept()
+		InitClient(conn)
+		utils.Error_check(err)
+	}
+}
