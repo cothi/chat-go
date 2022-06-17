@@ -1,6 +1,6 @@
-# chat-go
+# chat-go [![Go](https://github.com/cothi/chat-go/actions/workflows/go.yml/badge.svg)](https://github.com/cothi/chat-go/actions/workflows/go.yml)
 
-go chat
+Terminal based chat made with go
 
 ## demo
 ![demo](/assets/demo_view2.png)
