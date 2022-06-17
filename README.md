@@ -25,7 +25,6 @@ go run main.go
 ```
 
 ## TODO
-1. [ ] cli
+1. [ ] cli (server, client, set port)
 2. [ ] chennel and lobby
-3. [ ] nickname
-4. [ ] command
+3. [ ] command (set nickname, leave room)
