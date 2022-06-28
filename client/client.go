@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cothi/tcp-chat-remodel/utils"
+	"github.com/cothi/chat-go/utils"
 )
 
 type Client struct {
@@ -40,8 +40,8 @@ func (c *Client) Write() {
 	}
 }
 
-func ClientInit() *Client {
-	conn, err := net.Dial("tcp", ":8000")
+func ClientInit(serverPort string) *Client {
+	conn, err := net.Dial("tcp", serverPort)
 	utils.Error_check(err)
 
 	c := &Client{
@@ -55,5 +55,3 @@ func ClientInit() *Client {
 
 	return c
 }
-
-// Reads from Stdin, and outputs to the socket.

@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+
+func PortSet(port string) string {
+  return ":" + port
+}
+
 func Error_check(err interface{}) {
 	if err != nil {
 		log.Panic(err)

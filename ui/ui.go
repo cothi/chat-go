@@ -3,8 +3,8 @@ package ui
 import (
 	"time"
 
-	"github.com/cothi/tcp-chat-remodel/client"
-	"github.com/cothi/tcp-chat-remodel/utils"
+	"github.com/cothi/chat-go/client"
+	"github.com/cothi/chat-go/utils"
 	"github.com/marcusolsson/tui-go"
 	ui "github.com/marcusolsson/tui-go"
 )
@@ -95,4 +95,9 @@ func UiSetup(client *client.Client) {
 	go CheckboxRead(history, client)
 	ui.Run()
 
+}
+
+func StartClient(serverPort string) {
+	client := client.ClientInit(serverPort)
+	UiSetup(client)
 }

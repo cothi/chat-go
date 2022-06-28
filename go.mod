@@ -1,4 +1,4 @@
-module github.com/cothi/tcp-chat-remodel
+module github.com/cothi/chat-go
 
 go 1.17
 

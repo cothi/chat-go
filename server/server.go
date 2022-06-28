@@ -1,11 +1,11 @@
-package main
+package server
 
 import (
 	"fmt"
 	"net"
 	"time"
 
-	"github.com/cothi/tcp-chat-remodel/utils"
+	"github.com/cothi/chat-go/utils"
 )
 
 type Message struct {
@@ -65,11 +65,13 @@ func (c *Client) Read() {
 	}
 }
 
-func main() {
+func Start(port string) {
 
-	l, err := net.Listen("tcp", ":8000")
+	l, err := net.Listen("tcp", port)
 	utils.Error_check(err)
 	defer l.Close()
+
+	fmt.Printf("Start Server port %s \n", port)
 	for {
 		conn, err := l.Accept()
 		InitClient(conn)

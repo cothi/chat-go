@@ -1,6 +1,6 @@
 package main
 
-import "github.com/cothi/tcp-chat-remodel/cmd"
+import "github.com/cothi/chat-go/cmd"
 
 func main() {
 	/* var wg sync.WaitGroup
@@ -17,6 +17,5 @@ func main() {
 	go ui.UiSetup(client)
 	wg.Wait() */
 
-  cmd.Execute()
+	cmd.Execute()
 }
-
