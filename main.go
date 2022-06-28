@@ -1,14 +1,9 @@
 package main
 
-import (
-	"sync"
-
-	"github.com/cothi/tcp-chat-remodel/client"
-	"github.com/cothi/tcp-chat-remodel/ui"
-)
+import "github.com/cothi/tcp-chat-remodel/cmd"
 
 func main() {
-	var wg sync.WaitGroup
+	/* var wg sync.WaitGroup
 
 	wg.Add(1)
 
@@ -20,5 +15,8 @@ func main() {
 	// go cui.Ui.Run()
 
 	go ui.UiSetup(client)
-	wg.Wait()
+	wg.Wait() */
+
+  cmd.Execute()
 }
+
