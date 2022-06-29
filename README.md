@@ -26,5 +26,6 @@ go run main.go
 
 ## TODO
 1. [x] cli (server, client, set port)
-2. [ ] chennel and lobby
-3. [ ] command (set nickname, leave room)
+2. [x] chennel
+3. [ ] lobby
+4. [ ] command (set nickname, leave room)
