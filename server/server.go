@@ -76,14 +76,13 @@ func (c *Client) Write() {
 func (c *Client) Read() {
 	recv := make([]byte, 4096)
 	for {
-		n, e := c.conn.Read(recv)
+		_, e := c.conn.Read(recv)
 
 		if e != nil {
 			c.conn.Close()
 			close(c.box)
 			return
 		}
-		room_1.broadcast(recv[:n])
 	}
 }
 

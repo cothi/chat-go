@@ -33,7 +33,7 @@ var rootUi Tui
 func (room *ChatRoom) Init() {
 	post := &Post{
 		chat: "t",
-    time: time.Now().Local().Format("15:04"),
+		time: time.Now().Local().Format("15:04"),
 	}
 
 	post2 := &Post{
