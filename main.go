@@ -68,8 +68,9 @@ func historyUpdate(ui *tui.Box, selected string) {
 		// fmt.Println(*&m.chat)
 		newHbox.Append(
 			tui.NewHBox(
-				tui.NewLabel(*&m.time),
+				tui.NewLabel(*&m.time+" : "),
 				tui.NewLabel(*&m.chat),
+				tui.NewSpacer(),
 			))
 	}
 	*ui = *newHbox
@@ -91,8 +92,11 @@ func main() {
 		"Test2",
 	)
 
-	sidebar := tui.NewHBox(
+	sidebar := tui.NewVBox(
+		tui.NewLabel("CHANNEL"),
 		barList,
+
+    tui.NewSpacer(),
 	)
 	sidebar.SetBorder(true)
 
