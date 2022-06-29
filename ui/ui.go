@@ -17,15 +17,11 @@ type Cui struct {
 
 var cui Cui
 
+// Append check box
 func CheckboxRead(his *ui.Box, client *client.Client) {
 	for {
 		time.Sleep(1 * time.Second)
 		m := <-client.Inbox
-		/*
-			if !ok {
-				break
-			} */
-
 		cui.Ui.Update(func() {
 			his.Append(ui.NewHBox(
 				ui.NewLabel(time.Now().Format("15:14")),
@@ -34,10 +30,10 @@ func CheckboxRead(his *ui.Box, client *client.Client) {
 			))
 		})
 	}
-	// c.History.Append(tui)
 }
 
-func UiSetup(client *client.Client) {
+// ui setup
+func UiSetup() {
 
 	sidebar := ui.NewVBox(
 		tui.NewLabel("CHANNELS"),
@@ -48,15 +44,8 @@ func UiSetup(client *client.Client) {
 	sidebar.Insert(1, tui.NewLabel("check"))
 	sidebar.SetBorder(true)
 	sidebar.SetFocused(true)
-	// cui.Sidebar = *sidebar
 
 	history := tui.NewVBox()
-	/* history.Append(ui.NewHBox(
-		ui.NewPadder(1, 0, ui.NewLabel("test: ")),
-		ui.NewLabel("Helo"),
-		ui.NewSpacer(),
-	)) */
-
 	historyScroll := tui.NewScrollArea(history)
 	historyScroll.SetAutoscrollToBottom(true)
 
@@ -75,12 +64,7 @@ func UiSetup(client *client.Client) {
 	chat.SetSizePolicy(ui.Expanding, ui.Expanding)
 
 	input.OnSubmit(func(e *ui.Entry) {
-		/* history.Append(ui.NewHBox(
-			ui.NewLabel(time.Now().Format("00:00")),
-			ui.NewPadder(1, 0, tui.NewLabel(fmt.Sprintf("%s", "me: "))),
-			ui.NewLabel(e.Text()),
-			ui.NewSpacer(),
-		)) */
+
 		client.Outbox <- []byte(e.Text())
 		input.SetText("")
 	})
@@ -93,11 +77,11 @@ func UiSetup(client *client.Client) {
 	cui.Ui = ui
 
 	go CheckboxRead(history, client)
-	ui.Run()
+  cui.Ui.Run()
 
 }
 
-func StartClient(serverPort string) {
+/* func StartClient(serverPort string) {
 	client := client.ClientInit(serverPort)
 	UiSetup(client)
-}
+} */

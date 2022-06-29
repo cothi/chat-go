@@ -8,9 +8,27 @@ import (
 	"github.com/cothi/chat-go/utils"
 )
 
+var (
+	Lobby Chan
+)
+
 type Message struct {
 	time time.Time
 	text string
+}
+
+type Chan struct {
+	room map[string]*room
+}
+
+func (c *Chan) Init() {
+	c.room["lobby"] = &room{
+		room_name: "lobby",
+	}
+}
+
+func (c *Chan) Create(name string) {
+	c.room[name] = &room{}
 }
 
 type room struct {
@@ -19,10 +37,6 @@ type room struct {
 	clients   []*Client
 	message   []string
 }
-
-var (
-	room_1 room
-)
 
 func (r *room) broadcast(msg []byte) {
 	for _, c := range r.clients {
@@ -44,13 +58,16 @@ func InitClient(conn net.Conn) {
 	}
 	go client.Write()
 	go client.Read()
-	room_1.clients = append(room_1.clients, &client)
+	Lobby.room["lobby"].clients = append(Lobby.room["lobby"].clients, &client)
 }
 
 func (c *Client) Write() {
 	for {
-
-		s := <-c.box
+		s, ok := <-c.box
+		if !ok {
+			fmt.Printf("Close client %s %s \n", c.name, c.conn.LocalAddr())
+			return
+		}
 		c.conn.Write(s)
 		fmt.Println(c.name, c.conn.LocalAddr(), string(s))
 	}
@@ -60,7 +77,12 @@ func (c *Client) Read() {
 	recv := make([]byte, 4096)
 	for {
 		n, e := c.conn.Read(recv)
-		utils.Error_check(e)
+
+		if e != nil {
+			c.conn.Close()
+			close(c.box)
+			return
+		}
 		room_1.broadcast(recv[:n])
 	}
 }
