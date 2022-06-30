@@ -22,6 +22,13 @@ type Chan struct {
 	room map[string]*room
 }
 
+
+type Post struct {
+	Chat    string `json:"chat"`
+	Time    string `json:"time"`
+	RoomNum string `json:"room_num"`
+}
+
 func (c *Chan) Init() {
 
 	c.room = make(map[string]*room)
@@ -92,12 +99,11 @@ func (c *Client) Read() {
 		}
 		json.Unmarshal(recv[:i], &msg)
 		fmt.Println(msg.RoomNum)
-    Lobby.room[msg.RoomNum].broadcast(recv[:i])
+		Lobby.room[msg.RoomNum].broadcast(recv[:i])
 	}
 }
 
 func Start(port string) {
-
 	Lobby.Init()
 	l, err := net.Listen("tcp", port)
 	utils.Error_check(err)
@@ -110,8 +116,3 @@ func Start(port string) {
 	}
 }
 
-type Post struct {
-	Chat    string `json:"chat"`
-	Time    string `json:"time"`
-	RoomNum string `json:"room_num"`
-}

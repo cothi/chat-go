@@ -36,6 +36,7 @@ func (c *Client) Write() {
 
 func (c *Client) ClientInit(serverPort string) *Client {
 	conn, _ := net.Dial("tcp", ":"+serverPort)
+  c.Name = "anonymous"
 	c.Conn = conn
 	c.Outbox = make(chan []byte)
 	c.Inbox = make(chan []byte)

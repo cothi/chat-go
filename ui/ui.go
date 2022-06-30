@@ -24,6 +24,7 @@ type Post struct {
 	Chat    string `json:"chat"`
 	Time    string `json:"time"`
 	RoomNum string `json:"room_num"`
+	Name    string `json:"name"`
 }
 
 type Tui struct {
@@ -36,7 +37,7 @@ var rootUi Tui
 var cli client.Client
 
 // Init method
-func (room *ChatRoom) Init() {
+func (room *ChatRoom) Init(ui *tui.Box) {
 
 	rootUi.NowRoom = "0"
 	cli.Name = "anonymous"
@@ -45,12 +46,14 @@ func (room *ChatRoom) Init() {
 		Chat:    "t",
 		Time:    time.Now().Local().Format("15:04"),
 		RoomNum: "1",
+		Name:    "test",
 	}
 
 	post2 := &Post{
 		Chat:    "t2",
 		Time:    time.Now().Local().Format("15:04"),
-		RoomNum: "2",
+		RoomNum: "0",
+		Name:    "test",
 	}
 
 	chatP := &ChatPost{
@@ -67,8 +70,24 @@ func (room *ChatRoom) Init() {
 	for {
 		msg := <-cli.Inbox
 		json.Unmarshal(msg, &postMsg)
-		AddMessage(&postMsg)
+		rootUi.Ui.Update(func() {
+			ui.Append(
+				tui.NewHBox(
+					tui.NewLabel(postMsg.Name+" "),
+					tui.NewLabel(postMsg.Time+" : "),
+					tui.NewLabel(postMsg.Chat),
+					tui.NewSpacer(),
+				),
+			)
+		})
+		justAppend(&postMsg)
+
 	}
+}
+
+func justAppend(p *Post) {
+
+	*&ChatRooms.ChatRoom[p.RoomNum].ChatHistory = append(*&ChatRooms.ChatRoom[p.RoomNum].ChatHistory, p)
 }
 
 // AddMessage function
@@ -81,26 +100,22 @@ func AddMessage(p *Post) {
 // HistoryUpdate function
 func HistoryUpdate(ui *tui.Box, selected string) {
 	newVbox := tui.NewVBox()
-	newVbox.SetBorder(true)
 	newVbox.Append(tui.NewSpacer())
 
-	rootUi.Ui.Update(func() {
-		for _, m := range ChatRooms.ChatRoom[selected].ChatHistory {
-			newVbox.Append(
-				tui.NewHBox(
-					tui.NewLabel(cli.Name+" "),
-					tui.NewLabel(*&m.Time+" : "),
-					tui.NewLabel(*&m.Chat),
-					tui.NewSpacer(),
-				))
-		}
-	})
+	for _, m := range ChatRooms.ChatRoom[selected].ChatHistory {
+		newVbox.Append(
+			tui.NewHBox(
+				tui.NewLabel(*&m.Name+" "),
+				tui.NewLabel(*&m.Time+" : "),
+				tui.NewLabel(*&m.Chat),
+				tui.NewSpacer(),
+			))
+	}
 	*ui = *newVbox
 }
 
 // Ui Setup
 func UiSetup(serverPort string) {
-	go ChatRooms.Init()
 	cli.ClientInit(serverPort)
 
 	barList := tui.NewList()
@@ -117,19 +132,21 @@ func UiSetup(serverPort string) {
 	sidebar.SetBorder(true)
 
 	chatHistory := tui.NewVBox()
-	chatHistory.SetBorder(true)
 
 	chatScroll := tui.NewScrollArea(chatHistory)
 	chatScroll.SetAutoscrollToBottom(true)
 
-	rootUi.HistoryBox = chatHistory
+	historyBox := tui.NewVBox(chatScroll)
+	historyBox.SetBorder(true)
 
 	chatEntry := tui.NewEntry()
-	chatInputBox := tui.NewHBox(chatEntry)
-	chatInputBox.SetSizePolicy(tui.Expanding, tui.Maximum)
-	chatInputBox.SetBorder(true)
+	chatEntry.SetFocused(true)
 
-	chatPanel := tui.NewVBox(chatHistory, chatInputBox)
+	chatInputBox := tui.NewHBox(chatEntry)
+	chatInputBox.SetBorder(true)
+	chatInputBox.SetSizePolicy(tui.Expanding, tui.Maximum)
+
+	chatPanel := tui.NewVBox(historyBox, chatInputBox)
 	chatPanel.SetSizePolicy(tui.Expanding, tui.Maximum)
 
 	entirePanel := tui.NewHBox(sidebar, chatPanel)
@@ -153,12 +170,17 @@ func UiSetup(serverPort string) {
 			Chat:    e.Text(),
 			Time:    time.Now().Local().Format("15:04"),
 			RoomNum: rootUi.NowRoom,
+			Name:    cli.Name,
 		}
 		pBytes, _ := json.Marshal(p)
 		cli.Outbox <- pBytes
 		e.SetText("")
+
 	})
 
+	rootUi.HistoryBox = chatHistory
+
 	root.SetKeybinding("Esc", func() { root.Quit() })
+	go ChatRooms.Init(chatHistory)
 	root.Run()
 }
