@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"time"
@@ -22,9 +23,14 @@ type Chan struct {
 }
 
 func (c *Chan) Init() {
-	c.room["lobby"] = &room{
-		room_name: "lobby",
+
+	c.room = make(map[string]*room)
+	room1 := room{
+		room_name: "0",
 	}
+
+	c.room["0"] = &room1
+
 }
 
 func (c *Chan) Create(name string) {
@@ -33,7 +39,6 @@ func (c *Chan) Create(name string) {
 
 type room struct {
 	room_name string
-	port      []string
 	clients   []*Client
 	message   []string
 }
@@ -56,9 +61,9 @@ func InitClient(conn net.Conn) {
 		conn: conn,
 		box:  make(chan []byte),
 	}
+	Lobby.room["0"].clients = append(Lobby.room["0"].clients, &client)
 	go client.Write()
 	go client.Read()
-	Lobby.room["lobby"].clients = append(Lobby.room["lobby"].clients, &client)
 }
 
 func (c *Client) Write() {
@@ -75,27 +80,38 @@ func (c *Client) Write() {
 
 func (c *Client) Read() {
 	recv := make([]byte, 4096)
+	var msg Post
 	for {
-		_, e := c.conn.Read(recv)
+		i, e := c.conn.Read(recv)
+		fmt.Println(recv[:i])
 
 		if e != nil {
 			c.conn.Close()
 			close(c.box)
 			return
 		}
+		json.Unmarshal(recv[:i], &msg)
+		fmt.Println(msg.RoomNum)
+    Lobby.room[msg.RoomNum].broadcast(recv[:i])
 	}
 }
 
 func Start(port string) {
 
+	Lobby.Init()
 	l, err := net.Listen("tcp", port)
 	utils.Error_check(err)
 	defer l.Close()
-
 	fmt.Printf("Start Server port %s \n", port)
 	for {
 		conn, err := l.Accept()
-		InitClient(conn)
 		utils.Error_check(err)
+		InitClient(conn)
 	}
+}
+
+type Post struct {
+	Chat    string `json:"chat"`
+	Time    string `json:"time"`
+	RoomNum string `json:"room_num"`
 }

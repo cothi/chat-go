@@ -1,32 +1,26 @@
 package client
 
 import (
-	"fmt"
 	"net"
-	"strings"
 	"sync"
 
 	"github.com/cothi/chat-go/utils"
 )
 
 type Client struct {
+	Name   string
 	Conn   net.Conn
 	Outbox chan []byte
-	Inbox  chan string
+	Inbox  chan []byte
 	m      sync.Mutex
 }
 
 func (c *Client) Read() {
-
 	recv := make([]byte, 4096)
-
 	for {
-		n, e := c.Conn.Read(recv)
-		// fmt.Println(n)
+		i, e := c.Conn.Read(recv)
 		utils.Error_check(e)
-
-		str := fmt.Sprintf("%s: %s", c.Conn.LocalAddr(), strings.TrimSpace(string(recv[:n])))
-		c.Inbox <- str
+		c.Inbox <- recv[:i]
 	}
 }
 
@@ -40,18 +34,12 @@ func (c *Client) Write() {
 	}
 }
 
-func ClientInit(serverPort string) *Client {
-	conn, err := net.Dial("tcp", serverPort)
-	utils.Error_check(err)
-
-	c := &Client{
-		Conn:   conn,
-		Outbox: make(chan []byte),
-		Inbox:  make(chan string),
-	}
-
+func (c *Client) ClientInit(serverPort string) *Client {
+	conn, _ := net.Dial("tcp", ":"+serverPort)
+	c.Conn = conn
+	c.Outbox = make(chan []byte)
+	c.Inbox = make(chan []byte)
 	go c.Read()
 	go c.Write()
-
 	return c
 }

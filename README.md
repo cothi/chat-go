@@ -14,14 +14,12 @@ git clone https://github.com/cothi/chat-go/new/main?readme=1
 cd chat-go
 go mod tidy
 
-# server
-go run server/server.go
+go build ./
 
-# other terminal (client)
-go run main.go
 
-# other terminal (client 2)
-go run main.go
+./chat-go server --serverPort=8000
+
+
 ```
 
 ## TODO

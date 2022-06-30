@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cothi/chat-go/server"
+	"github.com/cothi/chat-go/ui"
 	"github.com/cothi/chat-go/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,6 +41,7 @@ var (
 		Use:   "client [OPTIONS]",
 		Short: "Start client chat",
 		Run: func(cmd *cobra.Command, args []string) {
+      ui.UiSetup(serverPort)
 		},
 	}
 )
