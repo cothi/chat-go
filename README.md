@@ -17,13 +17,20 @@ go mod tidy
 go build ./
 
 
+
+# start server
+
 ./chat-go server --serverPort=8000
 
+
+# start client 
+./chat-go client --serverPort=8000
 
 ```
 
 ## TODO
 1. [x] cli (server, client, set port)
 2. [x] chennel
-3. [ ] lobby
-4. [ ] command (set nickname, leave room)
+3. [x] lobby
+4. [x] command (set nickname,
+5. [ ] command (leave room)

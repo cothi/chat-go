@@ -13,6 +13,7 @@
 *.dll
 *.so
 *.dylib
+chat-go
 
 # Test binary, built with `go test -c`
 *.test

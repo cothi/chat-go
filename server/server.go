@@ -9,6 +9,14 @@ import (
 	"github.com/cothi/chat-go/utils"
 )
 
+type MessageKind int
+
+const (
+	MessageCreateMsg MessageKind = iota
+	MessageCreateRoom
+	MessageJoinRoom
+)
+
 var (
 	Lobby Chan
 )
@@ -22,26 +30,43 @@ type Chan struct {
 	room map[string]*room
 }
 
-
 type Post struct {
-	Chat    string `json:"chat"`
-	Time    string `json:"time"`
-	RoomNum string `json:"room_num"`
+	Chat     string `json:"chat"`
+	Time     string `json:"time"`
+	Roomname string `json:"roomname"`
+	NickName string `json:"nickname"`
+	Kind     int    `json:"kind"`
 }
 
 func (c *Chan) Init() {
-
 	c.room = make(map[string]*room)
 	room1 := room{
-		room_name: "0",
+		room_name: "Lobby",
 	}
-
-	c.room["0"] = &room1
-
+	c.room["Lobby"] = &room1
 }
 
-func (c *Chan) Create(name string) {
-	c.room[name] = &room{}
+func (c *Chan) Create(p *Post, client *Client) {
+	roomName := p.Chat
+	c.room[p.Chat] = &room{
+		room_name: roomName,
+	}
+	c.room[roomName].clients = append(c.room[roomName].clients, client)
+	c.room[roomName].message = []string{"create room"}
+	fmt.Println("create room", roomName)
+
+	b, e := json.Marshal(p)
+	utils.Error_check(e)
+
+	for _, r := range c.room {
+		r.broadcast(b)
+	}
+}
+
+func (c *Chan) Join(roomName string, client *Client) {
+	c.room[roomName].clients = append(c.room[roomName].clients, client)
+	c.room[roomName].message = append(c.room[roomName].message, "join")
+	fmt.Println("join room", client.name)
 }
 
 type room struct {
@@ -52,6 +77,7 @@ type room struct {
 
 func (r *room) broadcast(msg []byte) {
 	for _, c := range r.clients {
+		fmt.Println(msg)
 		c.box <- msg
 	}
 }
@@ -60,17 +86,6 @@ type Client struct {
 	name string
 	conn net.Conn
 	box  chan []byte
-}
-
-func InitClient(conn net.Conn) {
-	client := Client{
-		name: "anonymous",
-		conn: conn,
-		box:  make(chan []byte),
-	}
-	Lobby.room["0"].clients = append(Lobby.room["0"].clients, &client)
-	go client.Write()
-	go client.Read()
 }
 
 func (c *Client) Write() {
@@ -98,8 +113,30 @@ func (c *Client) Read() {
 			return
 		}
 		json.Unmarshal(recv[:i], &msg)
-		fmt.Println(msg.RoomNum)
-		Lobby.room[msg.RoomNum].broadcast(recv[:i])
+		fmt.Println(msg)
+		HandleMessage(&msg, c)
+	}
+}
+
+func InitClient(conn net.Conn) {
+	client := Client{
+		name: "anonymous",
+		conn: conn,
+		box:  make(chan []byte),
+	}
+	Lobby.room["Lobby"].clients = append(Lobby.room["Lobby"].clients, &client)
+	go client.Write()
+	go client.Read()
+}
+
+func HandleMessage(p *Post, c *Client) {
+	switch p.Kind {
+	case int(MessageCreateMsg):
+		b, e := json.Marshal(p)
+		utils.Error_check(e)
+		Lobby.room[p.Roomname].broadcast(b)
+	case int(MessageCreateRoom):
+		Lobby.Create(p, c)
 	}
 }
 
@@ -115,4 +152,3 @@ func Start(port string) {
 		InitClient(conn)
 	}
 }
-

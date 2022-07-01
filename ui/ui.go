@@ -2,7 +2,6 @@ package ui
 
 import (
 	"encoding/json"
-	"strconv"
 	"time"
 
 	"github.com/cothi/chat-go/client"
@@ -17,101 +16,120 @@ type ChatRoom struct {
 var ChatRooms ChatRoom
 
 type ChatPost struct {
-	ChatHistory []*Post
-}
-
-type Post struct {
-	Chat    string `json:"chat"`
-	Time    string `json:"time"`
-	RoomNum string `json:"room_num"`
-	Name    string `json:"name"`
+	ChatHistory []*client.Post
 }
 
 type Tui struct {
 	Ui         tui.UI
 	HistoryBox *tui.Box
 	NowRoom    string
+	ChanList   *tui.List
 }
 
 var rootUi Tui
 var cli client.Client
 
 // Init method
-func (room *ChatRoom) Init(ui *tui.Box) {
+func (room *ChatRoom) Init() {
 
-	rootUi.NowRoom = "0"
 	cli.Name = "anonymous"
+	rootUi.NowRoom = "Lobby"
 
-	post := &Post{
-		Chat:    "t",
-		Time:    time.Now().Local().Format("15:04"),
-		RoomNum: "1",
-		Name:    "test",
+	post := &client.Post{
+		Chat:     "t",
+		Time:     time.Now().Local().Format("15:04"),
+		Roomname: "Lobby",
+		Kind:     client.MessageCreateMsg,
 	}
 
-	post2 := &Post{
-		Chat:    "t2",
-		Time:    time.Now().Local().Format("15:04"),
-		RoomNum: "0",
-		Name:    "test",
+	post2 := &client.Post{
+		Chat:     "t2",
+		Time:     time.Now().Local().Format("15:04"),
+		Roomname: "tmp",
+		Kind:     client.MessageCreateMsg,
 	}
 
 	chatP := &ChatPost{
-		ChatHistory: []*Post{post},
+		ChatHistory: []*client.Post{post},
 	}
 	chatT := &ChatPost{
-		ChatHistory: []*Post{post2},
+		ChatHistory: []*client.Post{post2},
 	}
 
 	room.ChatRoom = make(map[string]*ChatPost)
-	room.ChatRoom["0"] = chatP
-	room.ChatRoom["1"] = chatT
-	var postMsg Post
+	room.ChatRoom["Lobby"] = chatP
+	room.ChatRoom["tmp"] = chatT
 	for {
+		var postMsg client.Post
 		msg := <-cli.Inbox
 		json.Unmarshal(msg, &postMsg)
-		rootUi.Ui.Update(func() {
+		room.HandleRecievedMessage(&postMsg)
+
+		/* rootUi.Ui.Update(func() {
 			ui.Append(
 				tui.NewHBox(
-					tui.NewLabel(postMsg.Name+" "),
+					tui.NewLabel(postMsg.Chat+" "),
 					tui.NewLabel(postMsg.Time+" : "),
 					tui.NewLabel(postMsg.Chat),
 					tui.NewSpacer(),
 				),
 			)
-		})
-		justAppend(&postMsg)
-
+		}) */
 	}
 }
 
-func justAppend(p *Post) {
-
-	*&ChatRooms.ChatRoom[p.RoomNum].ChatHistory = append(*&ChatRooms.ChatRoom[p.RoomNum].ChatHistory, p)
+func (room *ChatRoom) HandleRecievedMessage(msg *client.Post) {
+	switch msg.Kind {
+	case client.MessageCreateMsg:
+		room.AddMessage(msg)
+	case client.MessageCreateRoom:
+		room.CreateRoom(msg)
+	case client.MessageJoinRoom:
+		room.AddMessage(msg)
+	}
 }
 
 // AddMessage function
-func AddMessage(p *Post) {
+func (room *ChatRoom) AddMessage(p *client.Post) {
+	room.ChatRoom[p.Roomname].ChatHistory = append(room.ChatRoom[p.Roomname].ChatHistory, p)
+	// fmt.Println(room.ChatRoom[p.Roomname].ChatHistory)
+	room.HistoryUpdate(p.Roomname)
+}
 
-	*&ChatRooms.ChatRoom[p.RoomNum].ChatHistory = append(*&ChatRooms.ChatRoom[p.RoomNum].ChatHistory, p)
-	HistoryUpdate(rootUi.HistoryBox, p.RoomNum)
+func (room *ChatRoom) CreateRoom(p *client.Post) {
+	if _, ok := room.ChatRoom[p.Chat]; ok {
+		return
+	}
+	msg := &*p
+	tmp := &ChatPost{
+		ChatHistory: []*client.Post{msg},
+	}
+	room.ChatRoom[p.Chat] = tmp
+
+	rootUi.Ui.Update(func() {
+		rootUi.ChanList.AddItems(p.Chat)
+	})
 }
 
 // HistoryUpdate function
-func HistoryUpdate(ui *tui.Box, selected string) {
+func (room *ChatRoom) HistoryUpdate(selected string) {
 	newVbox := tui.NewVBox()
 	newVbox.Append(tui.NewSpacer())
 
-	for _, m := range ChatRooms.ChatRoom[selected].ChatHistory {
-		newVbox.Append(
-			tui.NewHBox(
-				tui.NewLabel(*&m.Name+" "),
-				tui.NewLabel(*&m.Time+" : "),
-				tui.NewLabel(*&m.Chat),
-				tui.NewSpacer(),
-			))
+	for _, m := range room.ChatRoom[selected].ChatHistory {
+		msg := tui.NewHBox(
+			tui.NewLabel(m.Nickname+" "),
+			tui.NewLabel(m.Time+" : "),
+			tui.NewLabel(m.Chat),
+			tui.NewSpacer(),
+		)
+		// fmt.Println(m.Chat)
+		newVbox.Append(msg)
 	}
-	*ui = *newVbox
+
+	go rootUi.Ui.Update(func() {
+		*rootUi.HistoryBox = *newVbox
+	})
 }
 
 // Ui Setup
@@ -120,8 +138,8 @@ func UiSetup(serverPort string) {
 
 	barList := tui.NewList()
 	barList.AddItems(
-		"Test",
-		"Test2",
+		"Lobby",
+		"tmp",
 	)
 
 	sidebar := tui.NewVBox(
@@ -160,27 +178,29 @@ func UiSetup(serverPort string) {
 	utils.Error_check(err)
 	barList.OnSelectionChanged(
 		func(ui *tui.List) {
-			rootUi.NowRoom = strconv.Itoa(ui.Selected())
-			HistoryUpdate(chatHistory, strconv.Itoa(ui.Selected()))
+			rootUi.NowRoom = ui.SelectedItem()
+			ChatRooms.HistoryUpdate(ui.SelectedItem())
 		},
 	)
 
 	chatEntry.OnSubmit(func(e *tui.Entry) {
-		p := Post{
-			Chat:    e.Text(),
-			Time:    time.Now().Local().Format("15:04"),
-			RoomNum: rootUi.NowRoom,
-			Name:    cli.Name,
+		p := client.Post{
+			Chat:     e.Text(),
+			Time:     time.Now().Local().Format("15:04"),
+			Roomname: rootUi.NowRoom,
+			Nickname: cli.Name,
+			Kind:     client.MessageCreateMsg,
 		}
-		pBytes, _ := json.Marshal(p)
-		cli.Outbox <- pBytes
+		// pBytes, _ := json.Marshal(p)
+		// cli.Outbox <- pBytes
+		cli.SendHandleMessage(&p)
 		e.SetText("")
-
 	})
 
+	rootUi.ChanList = barList
 	rootUi.HistoryBox = chatHistory
-
 	root.SetKeybinding("Esc", func() { root.Quit() })
-	go ChatRooms.Init(chatHistory)
+
+	go ChatRooms.Init()
 	root.Run()
 }
