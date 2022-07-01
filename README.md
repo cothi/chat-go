@@ -9,7 +9,7 @@ Terminal based chat made with go
 ## start
 
 ```bash
-git clone https://github.com/cothi/chat-go/new/main
+git clone https://github.com/cothi/chat-go.git
 
 cd chat-go
 go mod tidy
