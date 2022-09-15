@@ -9,16 +9,9 @@ import (
 	"github.com/cothi/chat-go/utils"
 )
 
-type Client struct {
-	Name   string
-	Conn   net.Conn
-	Outbox chan []byte
-	Inbox  chan []byte
-	m      sync.Mutex
-}
-
 type MessageKind int
 
+// Post structure
 type Post struct {
 	Chat     string      `json:"chat"`
 	Time     string      `json:"time"`
@@ -27,12 +20,22 @@ type Post struct {
 	Kind     MessageKind `json:"kind"`
 }
 
+// Client structure
+type Client struct {
+	Name   string
+	Conn   net.Conn
+	Outbox chan []byte
+	Inbox  chan []byte
+	m      sync.Mutex
+}
+
 const (
 	MessageCreateMsg MessageKind = iota
 	MessageCreateRoom
 	MessageJoinRoom
 )
 
+// read
 func (c *Client) Read() {
 	recv := make([]byte, 4096)
 	for {
@@ -42,6 +45,7 @@ func (c *Client) Read() {
 	}
 }
 
+// write
 func (c *Client) Write() {
 	for {
 		m, ok := <-c.Outbox
@@ -52,6 +56,7 @@ func (c *Client) Write() {
 	}
 }
 
+// client
 func (c *Client) ClientInit(serverPort string) *Client {
 	conn, _ := net.Dial("tcp", ":"+serverPort)
 	c.Name = "anonymous"
@@ -63,6 +68,7 @@ func (c *Client) ClientInit(serverPort string) *Client {
 	return c
 }
 
+// send handle message
 func (c *Client) SendHandleMessage(p *Post) {
 	splitWord := strings.Split(p.Chat, " ")
 
